@@ -95,7 +95,7 @@ All tests marked `@pytest.mark.smoke` + `ui`/`api`. Target: whole suite < 2 min 
 | A4 | Brands | `GET /brands` | Filter data present | `list[Brand]` validate; non-empty |
 | A5 | Login | `POST /users/login` with the registered `test_user` → token | Auth service alive | `LoginResponse` model; `access_token` non-empty, `token_type == "bearer"` |
 | A6 | Current user | `GET /users/me` with token | Token is accepted, user profile served | `User` model; `email == test_user.email` |
-| A7 | Negative login | `POST /users/login` with a random **non-existent** email → 401 | Auth rejects bad creds, without locking any real account | Assert status 401 (expected status to confirm once the API is stable; it returned 500 during exploration) |
+| A7 | Negative login | `POST /users/login` with a random **non-existent** email → 401 | Auth rejects bad creds, without locking any real account | Assert status 401 (verified: `{"error":"Unauthorized"}`) |
 
 ### UI smoke (`tests/ui/`)
 
