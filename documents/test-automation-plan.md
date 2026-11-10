@@ -119,5 +119,5 @@ All tests marked `@pytest.mark.smoke` + `ui`/`api`. Target: whole suite < 2 min 
 
 ## 7. Open points / later
 
-- Exact checkout success text & billing-address prefill to be confirmed during build (step U7).
+- ~~Exact checkout success text & billing-address prefill~~ — resolved in step 8: success text is "Payment was successful" (`payment-success-message`); billing is prefilled from the profile, and proceed needs all six address fields, so `test_user` is registered with a full address.
 - Regression scope later: register, contact form, filters/sort/pagination, favorites, invoices, admin, multi-browser matrix, Allure history on GitHub Pages.
