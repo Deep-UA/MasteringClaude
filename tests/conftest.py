@@ -7,7 +7,14 @@ import pytest
 
 from framework.api import ApiClient, AuthApi, ProductsApi
 from framework.config import Settings, get_settings
-from framework.models import Address, LoginResponse, RegisterUser, User
+from framework.models import (
+    Address,
+    LoginResponse,
+    Paginated,
+    Product,
+    RegisterUser,
+    User,
+)
 
 
 @pytest.fixture(scope="session")
@@ -97,3 +104,22 @@ def auth_token(auth_api: AuthApi, test_user: RegisterUser) -> str:
     response = auth_api.login(test_user.email, test_user.password)
     assert response.status_code == 200, f"Test user login failed: {response.text}"
     return LoginResponse.model_validate(response.json()).access_token
+
+
+@pytest.fixture(scope="session")
+def in_stock_product(products_api: ProductsApi) -> Product:
+    """First purchasable product (in stock, not a rental), looked up at run time.
+
+    The demo DB is reset periodically and product IDs change, so never hard-code them.
+    """
+    page = 1
+    while True:
+        response = products_api.list_products(page=page)
+        assert response.status_code == 200, f"Product lookup failed: {response.text}"
+        listing = Paginated[Product].model_validate(response.json())
+        for product in listing.data:
+            if product.in_stock and not product.is_rental:
+                return product
+        if page >= listing.last_page:
+            pytest.fail("No in-stock, non-rental product found in the catalog")
+        page += 1
