@@ -14,3 +14,22 @@ dev = [
     "pytest-playwright>=0.10.0",
     "pytest-xdist>=3.8.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--import-mode=importlib",
+    "--browser=chromium",
+    "--screenshot=only-on-failure",
+    "--tracing=retain-on-failure",
+    "--output=test-results",
+    "--alluredir=allure-results",
+]
+markers = [
+    "smoke: fast critical-path checks",
+    "ui: browser tests (Playwright)",
+    "api: REST API tests (httpx)",
+]
