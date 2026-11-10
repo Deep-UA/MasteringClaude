@@ -1,5 +1,6 @@
 import re
 
+import allure
 from playwright.sync_api import Page
 
 from framework.pages.base_page import BasePage
@@ -16,16 +17,17 @@ class HomePage(BasePage):
         self.product_names = page.get_by_test_id("product-name")
         self.search_input = page.get_by_test_id("search-query")
         self.search_button = page.get_by_test_id("search-submit")
-        self.search_caption = page.get_by_test_id(
-            "search-caption"
-        )  # "Searched for: <term>"
+        # "Searched for: <term>"
+        self.search_caption = page.get_by_test_id("search-caption")
         self._search_completed = page.get_by_test_id("search_completed")
 
     def search(self, term: str) -> None:
-        self.search_input.fill(term)
-        self.search_button.click()
-        self._search_completed.wait_for()  # results grid re-rendered for the new term
+        with allure.step(f"Search for '{term}'"):
+            self.search_input.fill(term)
+            self.search_button.click()
+            self._search_completed.wait_for()  # results grid re-rendered for the new term
 
     def open_product(self, index: int = 0) -> ProductPage:
-        self.product_cards.nth(index).click()
+        with allure.step(f"Open product card #{index}"):
+            self.product_cards.nth(index).click()
         return ProductPage(self.page)

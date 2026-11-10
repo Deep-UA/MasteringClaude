@@ -1,5 +1,6 @@
 from typing import Literal
 
+import allure
 from playwright.sync_api import Page
 
 from framework.pages.base_page import BasePage
@@ -28,19 +29,22 @@ class CheckoutPage(BasePage):
         # Step 4: payment
         self.payment_method = page.get_by_test_id("payment-method")
         self._finish = page.get_by_test_id("finish")
-        self.success_message = page.get_by_test_id(
-            "payment-success-message"
-        )  # "Payment was successful"
+        # "Payment was successful"
+        self.success_message = page.get_by_test_id("payment-success-message")
 
     def proceed_from_cart(self) -> None:
-        self._proceed_cart.click()
+        with allure.step("Checkout: proceed from cart"):
+            self._proceed_cart.click()
 
     def proceed_signed_in(self) -> None:
-        self._proceed_signed_in.click()
+        with allure.step("Checkout: proceed as signed-in user"):
+            self._proceed_signed_in.click()
 
     def proceed_from_billing_address(self) -> None:
-        self._proceed_address.click()
+        with allure.step("Checkout: proceed from billing address"):
+            self._proceed_address.click()
 
     def pay(self, method: PaymentMethod) -> None:
-        self.payment_method.select_option(method)
-        self._finish.click()
+        with allure.step(f"Checkout: pay with {method}"):
+            self.payment_method.select_option(method)
+            self._finish.click()

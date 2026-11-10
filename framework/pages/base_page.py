@@ -1,5 +1,6 @@
 from typing import Self
 
+import allure
 from playwright.sync_api import Page
 
 from framework.pages.components.header import Header
@@ -15,5 +16,6 @@ class BasePage:
         self.header = Header(page)
 
     def open(self) -> Self:
-        self.page.goto(self.path)
+        with allure.step(f"Open {self.path}"):
+            self.page.goto(self.path)
         return self

@@ -1,3 +1,4 @@
+import allure
 from playwright.sync_api import Page
 
 from framework.pages.base_page import BasePage
@@ -14,6 +15,8 @@ class LoginPage(BasePage):
         self.error = page.get_by_test_id("login-error")
 
     def login(self, email: str, password: str) -> None:
-        self.email.fill(email)
-        self.password.fill(password)
-        self.submit.click()
+        # Step title names the email only, never the password.
+        with allure.step(f"Log in via UI as {email}"):
+            self.email.fill(email)
+            self.password.fill(password)
+            self.submit.click()

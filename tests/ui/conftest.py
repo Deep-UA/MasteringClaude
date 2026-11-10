@@ -1,10 +1,37 @@
 import json
+from pathlib import Path
 
+import allure
 import pytest
 from playwright.sync_api import Page, Playwright
 
 from framework.config import Settings
 from framework.pages import AccountPage, CheckoutPage, HomePage, LoginPage, ProductPage
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
+    """Attach pytest-playwright's failure artifacts (screenshot, trace) to Allure.
+
+    pytest-playwright (a trylast wrapper, so it runs before this code) saves them in
+    the teardown phase and lists them as `playwright_<kind>` user properties.
+    """
+    report = yield
+    if report.when == "teardown":
+        root = Path(item.config.invocation_params.dir)
+        for name, path in report.user_properties:
+            if name == "playwright_screenshot":
+                allure.attach.file(
+                    root / path,
+                    name="Screenshot",
+                    attachment_type=allure.attachment_type.PNG,
+                )
+            elif name == "playwright_trace":
+                # Open with: uv run playwright show-trace <file>
+                allure.attach.file(
+                    root / path, name="Playwright trace", extension="zip"
+                )
+    return report
 
 
 @pytest.fixture(scope="session")

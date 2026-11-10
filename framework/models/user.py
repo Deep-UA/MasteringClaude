@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Address(BaseModel):
@@ -18,7 +18,9 @@ class RegisterUser(BaseModel):
     first_name: str
     last_name: str
     email: str
-    password: str  # rules: >= 8 chars, upper + lower + digit + symbol
+    # rules: >= 8 chars, upper + lower + digit + symbol.
+    # repr=False keeps it out of tracebacks, which pytest/Allure show on failure.
+    password: str = Field(repr=False)
     dob: date  # must be 18..75 years ago
     phone: str
     address: Address

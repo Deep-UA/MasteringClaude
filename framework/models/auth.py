@@ -1,9 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class LoginRequest(BaseModel):
     email: str
-    password: str
+    password: str = Field(repr=False)  # kept out of tracebacks
 
 
 class LoginResponse(BaseModel):

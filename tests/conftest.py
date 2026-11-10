@@ -1,7 +1,9 @@
+import platform
 import uuid
 import warnings
 from collections.abc import Iterator
 from datetime import date
+from pathlib import Path
 
 import pytest
 
@@ -15,6 +17,26 @@ from framework.models import (
     RegisterUser,
     User,
 )
+
+
+def pytest_sessionstart(session: pytest.Session) -> None:
+    """Write Allure's environment.properties (once: skipped on xdist workers)."""
+    config = session.config
+    alluredir = config.getoption("allure_report_dir", default=None)
+    if not alluredir or hasattr(config, "workerinput"):
+        return
+    settings = get_settings()
+    properties = {
+        "Base.URL": settings.base_url,
+        "API.URL": settings.api_url,
+        "Browser": ",".join(config.getoption("browser", default=None) or ["chromium"]),
+        "Python": platform.python_version(),
+    }
+    target = Path(config.invocation_params.dir) / alluredir
+    target.mkdir(parents=True, exist_ok=True)
+    (target / "environment.properties").write_text(
+        "".join(f"{key}={value}\n" for key, value in properties.items())
+    )
 
 
 @pytest.fixture(scope="session")

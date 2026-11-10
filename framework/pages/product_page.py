@@ -1,5 +1,6 @@
 from typing import Self
 
+import allure
 from playwright.sync_api import Page
 
 from framework.pages.base_page import BasePage
@@ -16,8 +17,10 @@ class ProductPage(BasePage):
         self.add_to_cart_button = page.get_by_test_id("add-to-cart")
 
     def open_product(self, product_id: str) -> Self:
-        self.page.goto(f"{self.path}{product_id}")
+        with allure.step(f"Open product {product_id}"):
+            self.page.goto(f"{self.path}{product_id}")
         return self
 
     def add_to_cart(self) -> None:
-        self.add_to_cart_button.click()
+        with allure.step("Add product to cart"):
+            self.add_to_cart_button.click()
