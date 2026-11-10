@@ -1,0 +1,16 @@
+[project]
+name = "masteringclaude"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "allure-pytest>=2.16.2",
+    "httpx>=0.28.1",
+    "pydantic>=2.14.3",
+    "pydantic-settings>=2.16.2",
+    "pytest>=9.2.0",
+    "pytest-playwright>=0.10.0",
+    "pytest-xdist>=3.8.0",
+]
