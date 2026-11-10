@@ -1,4 +1,5 @@
 import uuid
+import warnings
 from collections.abc import Iterator
 from datetime import date
 
@@ -6,7 +7,7 @@ import pytest
 
 from framework.api import ApiClient, AuthApi, ProductsApi
 from framework.config import Settings, get_settings
-from framework.models import Address, LoginResponse, RegisterUser
+from framework.models import Address, LoginResponse, RegisterUser, User
 
 
 @pytest.fixture(scope="session")
@@ -30,11 +31,27 @@ def products_api(api_client: ApiClient) -> ProductsApi:
     return ProductsApi(api_client)
 
 
-@pytest.fixture(scope="session")
-def test_user(auth_api: AuthApi) -> RegisterUser:
-    """A fresh user registered once per session (= once per xdist worker).
+def _delete_user(auth_api: AuthApi, settings: Settings, user_id: str) -> None:
+    """Best-effort cleanup: warn instead of failing, since the shared admin account can be locked."""
+    if not (settings.admin_email and settings.admin_password):
+        warnings.warn(f"ADMIN_EMAIL/ADMIN_PASSWORD not set; test user {user_id} was not deleted", stacklevel=1)
+        return
+    login = auth_api.login(settings.admin_email, settings.admin_password.get_secret_value())
+    if login.status_code != 200:
+        warnings.warn(f"Admin login failed ({login.status_code}); test user {user_id} was not deleted", stacklevel=1)
+        return
+    token = LoginResponse.model_validate(login.json()).access_token
+    response = auth_api.delete_user(user_id, token)
+    if response.status_code != 204:
+        warnings.warn(f"Deleting test user {user_id} failed ({response.status_code}): {response.text}", stacklevel=1)
 
-    Avoids the shared demo accounts, which other people can lock.
+
+@pytest.fixture(scope="session")
+def test_user(auth_api: AuthApi, settings: Settings) -> Iterator[RegisterUser]:
+    """A fresh user registered once per session (= once per xdist worker), deleted afterwards.
+
+    Avoids the shared demo accounts, which other people can lock. Shared by every test in
+    the worker, so tests must not change it (password, profile, failed logins).
     """
     suffix = uuid.uuid4().hex[:12]
     user = RegisterUser(
@@ -48,7 +65,9 @@ def test_user(auth_api: AuthApi) -> RegisterUser:
     )
     response = auth_api.register(user)
     assert response.status_code == 201, f"Test user registration failed: {response.text}"
-    return user
+    user_id = User.model_validate(response.json()).id
+    yield user
+    _delete_user(auth_api, settings, user_id)
 
 
 @pytest.fixture

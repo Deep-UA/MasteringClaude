@@ -17,3 +17,7 @@ class AuthApi:
 
     def me(self, token: str) -> httpx.Response:
         return self._client.get("/users/me", headers={"Authorization": f"Bearer {token}"})
+
+    def delete_user(self, user_id: str, admin_token: str) -> httpx.Response:
+        # Requires the admin role.
+        return self._client.delete(f"/users/{user_id}", headers={"Authorization": f"Bearer {admin_token}"})

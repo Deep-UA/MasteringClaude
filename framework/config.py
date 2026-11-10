@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,6 +12,9 @@ class Settings(BaseSettings):
     base_url: str = "https://practicesoftwaretesting.com"
     api_url: str = "https://api.practicesoftwaretesting.com"
     api_timeout: float = 10.0
+    # Admin login used only to delete the per-session test user. Unset -> cleanup is skipped.
+    admin_email: str | None = None
+    admin_password: SecretStr | None = None
 
 
 @lru_cache
