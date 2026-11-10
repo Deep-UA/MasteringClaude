@@ -1,0 +1,72 @@
+name: Smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ALLURE_VERSION: "2.46.1"
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Optional: lets the teardown delete the per-run test users. Cleanup is skipped if unset.
+      ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Install Chromium
+        run: uv run playwright install --with-deps chromium
+
+      - name: Run smoke tests
+        run: uv run pytest -m smoke -n auto
+
+      - name: Set up Java (for Allure CLI)
+        if: ${{ !cancelled() }}
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Generate Allure report
+        if: ${{ !cancelled() }}
+        run: |
+          curl -sSfL "https://github.com/allure-framework/allure2/releases/download/${ALLURE_VERSION}/allure-${ALLURE_VERSION}.tgz" \
+            | tar -xz -C "$RUNNER_TEMP"
+          # Single file: the downloaded artifact opens in a browser without a web server.
+          "$RUNNER_TEMP/allure-${ALLURE_VERSION}/bin/allure" generate allure-results --clean --single-file -o allure-report
+
+      - name: Upload Allure report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: allure-report
+          path: allure-report/
+
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-traces
+          path: test-results/
+          if-no-files-found: ignore
