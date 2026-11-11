@@ -78,7 +78,7 @@ MasteringClaude/
 | 10 | Test data | Product lookup via API (e.g. first in-stock product) | Shared demo data changes; avoid hard-coded IDs | Fixture `in_stock_product` using `ProductsApi` |
 | 11 | Allure integration | Steps, attachments, environment info | Readable reporting for UI + API | `allure.step` in page objects/clients; screenshot + trace on failure hook; `environment.properties` written at session start |
 | 12 | Parallelism | pytest-xdist | Fast smoke | `uv run pytest -m smoke -n auto`; fixtures xdist-safe (no shared mutable state; each test own browser context) |
-| 13 | CI | `.github/workflows/smoke.yml` | Automated smoke on push/PR + report artifact | `astral-sh/setup-uv` → `uv sync` → `uv run playwright install --with-deps chromium` → `pytest -m smoke -n auto` → generate Allure HTML (allure CLI action) → upload artifact; no secrets needed (users are registered per run) |
+| 13 | CI | `.github/workflows/smoke.yml` | Automated smoke on push/PR + report artifact | `astral-sh/setup-uv` → `uv sync` → `uv run playwright install chromium` → start a local copy of the app (`ci/toolshop.compose.yml`, upstream 2.5 images) and seed it → `pytest -m smoke -n auto` against `localhost` → generate Allure HTML → upload artifact; no secrets needed (users are registered per run). **Why local:** the public demo's Cloudflare bot check blocks browsers on GitHub-hosted runners |
 | 14 | Docs | README section: setup, run, report | Onboarding | Commands: `uv sync`, `uv run pytest -m smoke -n auto`, `allure serve allure-results` |
 
 ## 5. Smoke test suite

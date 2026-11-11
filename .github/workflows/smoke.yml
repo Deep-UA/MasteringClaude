@@ -22,11 +22,42 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
+      # Tests run against a local copy of the app (ci/toolshop.compose.yml), not the public demo:
+      # its Cloudflare bot check blocks browsers on GitHub-hosted runners ("Just a moment...").
+      BASE_URL: http://localhost:4200
+      API_URL: http://localhost:8091
+      COMPOSE_FILE: ci/toolshop.compose.yml
       # Optional: lets the teardown delete the per-run test users. Cleanup is skipped if unset.
       ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
       ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
     steps:
       - uses: actions/checkout@v7
+
+      - name: Start Toolshop app
+        timeout-minutes: 10
+        run: docker compose up -d --quiet-pull
+
+      - name: Seed database
+        timeout-minutes: 3
+        run: |
+          for i in $(seq 1 30); do
+            docker compose exec -T mariadb mysqladmin ping -h localhost -uroot -proot --silent && break
+            sleep 2
+          done
+          docker compose exec -T laravel-api php artisan migrate:refresh --seed
+
+      - name: Wait for API and UI
+        timeout-minutes: 6
+        run: |
+          wait_for() {  # url, attempts (5 s apart)
+            for i in $(seq 1 "$2"); do
+              [ "$(curl -s -o /dev/null -w '%{http_code}' "$1")" = 200 ] && { echo "$1 ready"; return 0; }
+              sleep 5
+            done
+            echo "$1 not ready"; docker compose logs --tail 50; return 1
+          }
+          wait_for "$API_URL/status" 24
+          wait_for "$BASE_URL" 60  # ng serve compiles on start
 
       # setup-uv publishes only full version tags (no moving `v10` tag).
       - uses: astral-sh/setup-uv@v10.3.3
@@ -43,10 +74,12 @@ jobs:
         timeout-minutes: 5
         run: uv run playwright install chromium
 
-      # UI only. Note: Cloudflare's bot check on practicesoftwaretesting.com has blocked the browser
-      # from GitHub-hosted runners before ("Just a moment..."); API smoke: `-m "smoke and api"`.
-      - name: Run smoke tests (UI)
-        run: uv run pytest -m "smoke and ui" -n auto
+      - name: Run smoke tests
+        run: uv run pytest -m smoke -n auto
+
+      - name: App logs
+        if: failure()
+        run: docker compose logs --tail 200
 
       - name: Set up Java (for Allure CLI)
         if: ${{ !cancelled() }}

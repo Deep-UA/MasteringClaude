@@ -72,6 +72,7 @@ tests/
   conftest.py        settings, API fixtures, test_user, auth_token, in_stock_product, Allure environment
   ui/conftest.py     base_url, data-test locators, page-object fixtures, logged_in_page, failure artifacts
 .github/workflows/smoke.yml   CI: smoke suite + Allure report artifact
+ci/toolshop.compose.yml       local copy of the app (Docker) that CI tests against
 ```
 
 ## Conventions
@@ -89,19 +90,31 @@ tests/
 
 ## CI
 
-`.github/workflows/smoke.yml` runs on push to `main`, on pull requests and manually: installs with
-`uv sync --locked`, runs `pytest -m "smoke and ui" -n auto`, and uploads
-- `allure-report` — single-file report, every run;
-- `playwright-traces` — `test-results/`, only when tests fail.
+`.github/workflows/smoke.yml` runs on push to `main`, on pull requests and manually. It tests a **local copy of
+the app**, not the public demo: the demo's Cloudflare bot check blocks browsers on GitHub-hosted runners (the page
+stays on "Just a moment..."). The job:
+1. starts the app from upstream's prebuilt images (`ci/toolshop.compose.yml`: UI on `:4200`, API on `:8091`)
+   and seeds its database;
+2. runs `pytest -m smoke -n auto` with `BASE_URL=http://localhost:4200` and `API_URL=http://localhost:8091`;
+3. uploads `allure-report` (single-file report, every run) and `playwright-traces` (`test-results/`, on failure),
+   and prints the app's container logs on failure.
+
+The same stack works locally (the images are amd64-only, so they run under emulation on Apple silicon):
+
+```bash
+docker compose -f ci/toolshop.compose.yml up -d
+docker compose -f ci/toolshop.compose.yml exec -T laravel-api php artisan migrate:refresh --seed
+BASE_URL=http://localhost:4200 API_URL=http://localhost:8091 uv run pytest -m smoke -n auto
+docker compose -f ci/toolshop.compose.yml down -v   # removes the stack and its database
+```
 
 Optional repository secrets `ADMIN_EMAIL` / `ADMIN_PASSWORD` enable test-user cleanup.
 
 ## Known limitations
 
-- **UI tests in CI may be blocked:** the demo site's Cloudflare bot check has blocked the browser on GitHub-hosted
-  runners (the page stays on "Just a moment..."). CI runs the UI smoke tests; API smoke tests run locally
-  (`uv run pytest -m "smoke and api"`). Planned fix: start the open-source app in CI and point `BASE_URL`/`API_URL` at it.
-- **Shared public demo:** the database is reset periodically (product IDs change, registered users are removed)
+- **CI app version can lag the demo:** CI pins the `2.5` images; the public demo may run a newer build. A locator
+  change there shows up in local runs against the demo first. Bump the image tags in `ci/toolshop.compose.yml` to follow.
+- **Shared public demo (local runs):** the database is reset periodically (product IDs change, registered users are removed)
   and the API sometimes answers slowly or with 500s. A run that overlaps a reset or an outage can fail.
 - **Sessions last 5 minutes:** API and web tokens expire after 300 s and are not refreshed; keep tests short.
 - **Secrets in artifacts (accepted):** Playwright traces of failed UI tests contain the typed test-user password
