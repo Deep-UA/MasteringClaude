@@ -43,10 +43,10 @@ jobs:
         timeout-minutes: 5
         run: uv run playwright install chromium
 
-      # API only: Cloudflare's bot check on practicesoftwaretesting.com blocks the browser from
-      # GitHub-hosted runners ("Just a moment..."). Run UI smoke locally until CI hosts the app itself.
-      - name: Run smoke tests (API)
-        run: uv run pytest -m "smoke and api" -n auto
+      # UI only. Note: Cloudflare's bot check on practicesoftwaretesting.com has blocked the browser
+      # from GitHub-hosted runners before ("Just a moment..."); API smoke: `-m "smoke and api"`.
+      - name: Run smoke tests (UI)
+        run: uv run pytest -m "smoke and ui" -n auto
 
       - name: Set up Java (for Allure CLI)
         if: ${{ !cancelled() }}

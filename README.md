@@ -90,7 +90,7 @@ tests/
 ## CI
 
 `.github/workflows/smoke.yml` runs on push to `main`, on pull requests and manually: installs with
-`uv sync --locked`, runs `pytest -m "smoke and api" -n auto`, and uploads
+`uv sync --locked`, runs `pytest -m "smoke and ui" -n auto`, and uploads
 - `allure-report` — single-file report, every run;
 - `playwright-traces` — `test-results/`, only when tests fail.
 
@@ -98,9 +98,9 @@ Optional repository secrets `ADMIN_EMAIL` / `ADMIN_PASSWORD` enable test-user cl
 
 ## Known limitations
 
-- **UI tests don't run in CI:** the demo site's Cloudflare bot check blocks the browser on GitHub-hosted runners
-  (the page stays on "Just a moment..."), so CI runs the API smoke tests only. Run `uv run pytest -m "smoke and ui"`
-  locally. Planned fix: start the open-source app in CI and point `BASE_URL`/`API_URL` at it.
+- **UI tests in CI may be blocked:** the demo site's Cloudflare bot check has blocked the browser on GitHub-hosted
+  runners (the page stays on "Just a moment..."). CI runs the UI smoke tests; API smoke tests run locally
+  (`uv run pytest -m "smoke and api"`). Planned fix: start the open-source app in CI and point `BASE_URL`/`API_URL` at it.
 - **Shared public demo:** the database is reset periodically (product IDs change, registered users are removed)
   and the API sometimes answers slowly or with 500s. A run that overlaps a reset or an outage can fail.
 - **Sessions last 5 minutes:** API and web tokens expire after 300 s and are not refreshed; keep tests short.
