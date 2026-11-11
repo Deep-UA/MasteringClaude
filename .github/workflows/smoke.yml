@@ -18,7 +18,8 @@ env:
 
 jobs:
   smoke:
-    runs-on: ubuntu-latest
+    # Pinned: Playwright-supported image, and no silent image upgrades (ubuntu-latest moved to 26.04).
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       # Optional: lets the teardown delete the per-run test users. Cleanup is skipped if unset.
@@ -36,8 +37,11 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
 
+      # No --with-deps: the runner image already has Chromium's system libraries, and apt
+      # (only needed for extra non-Latin fonts) failed on DNS for the Ubuntu mirrors.
       - name: Install Chromium
-        run: uv run playwright install --with-deps chromium
+        timeout-minutes: 5
+        run: uv run playwright install chromium
 
       - name: Run smoke tests
         run: uv run pytest -m smoke -n auto
