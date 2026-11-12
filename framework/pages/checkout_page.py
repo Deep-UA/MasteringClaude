@@ -5,9 +5,9 @@ from playwright.sync_api import Page
 
 from framework.pages.base_page import BasePage
 
-PaymentMethod = Literal[
-    "bank-transfer", "cash-on-delivery", "credit-card", "buy-now-pay-later", "gift-card"
-]
+# Only methods that need no extra fields. bank-transfer, credit-card, buy-now-pay-later
+# and gift-card reveal required inputs that keep `finish` disabled; add them with those fields.
+PaymentMethod = Literal["cash-on-delivery"]
 
 
 class CheckoutPage(BasePage):
